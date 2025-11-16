@@ -5,7 +5,7 @@ import {
   filterNewLinks,
   saveArticle,
 } from "../lib/Database/dbFunctions.js";
-import { SiBlogReWriter } from "../agents/SIBLOGREWRITER.js";
+import { SiBlogReWriter } from "../agents/SiBlogReWriter.js";
 import {
   FETCH_ARTICLE_LINKS,
   FETCH_NEWS_ARTICLE_DETAILS,
