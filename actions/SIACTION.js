@@ -33,10 +33,9 @@ export async function SIACTION() {
   console.log("🔄 Starting background ping loop...");
 
   const si_categories = [
-    //{ category_name: "soccer", category_type: "grid" },
-    // { category_name: "nba", category_type: "grid" },
-    // { category_name: "nba", category_type: "grid" },
-    { category_name: "nfl", category_type: "grid" },
+    { category_name: "soccer", category_type: "grid" },
+    { category_name: "nba", category_type: "grid" },
+     { category_name: "nfl", category_type: "grid" },
   ];
 
   const selecteddate = getTodayFormatted();
