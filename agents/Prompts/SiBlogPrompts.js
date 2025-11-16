@@ -19,9 +19,8 @@ Your task:
 8. Do not include any links to the original source site.
 9. Exclude any section titled “READ THE LATEST…” or similar.
 10. Preserve important details such as player names, match info, quotes, and statistics.
-
+11. The feautered Image should not be included in the body of the generated WordPress Gutenberg block code
 Add SEO metadata:
-- **featured_image**: URL or path to the main image
 - **focus_keyphrase**: Primary SEO phrase
 - **meta_description**: 150–160 character meta description
 - **tags**: SEO-friendly and relevant tags
