@@ -23,7 +23,8 @@ export async function SiBlogReWriter(blogContent, category) {
 
   const MAX_RETRIES = 4;
   const OPENROUTER_MODEL = "deepseek/deepseek-r1-0528:free";
-  const GEMINI_MODEL = "gemini-2.5-flash";
+  // const GEMINI_MODEL = "gemini-2.5-flash";
+   const GEMINI_MODEL = "gemini-2.5-pro";
 
   const prompt = SiBlogPrompt(category.category_name)
   
