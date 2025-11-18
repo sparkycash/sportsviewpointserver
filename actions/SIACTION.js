@@ -33,9 +33,11 @@ export async function SIACTION() {
   console.log("🔄 Starting background ping loop...");
 
   const si_categories = [
+     { category_name: "soccer", category_type: "grid" },
+     { category_name: "nfl", category_type: "grid" },
     { category_name: "nba", category_type: "grid" },
-    { category_name: "nfl", category_type: "grid" },
-    { category_name: "soccer", category_type: "grid" },
+   
+   
   ];
 
   const selecteddate = getTodayFormatted();
@@ -54,11 +56,13 @@ export async function SIACTION() {
       if (!links.success) continue;
       //console.log(links);
       console.log(
-        `✅ ${links.articles?.length} links fetched for ${si_category.category_name}`
+        `✅ ${links.articles?.length} Links fetched for ${si_category.category_name}`
       );
       todaysArticles += links.articles?.length;
 
-      const filtered = await filterNewLinks(links?.articles, si_category);
+      const filtered = await filterNewLinks(links?.articles, si_category, selecteddate);
+
+      
       if (!filtered?.success || !Array.isArray(filtered.data)) {
         console.warn(
           `⚠️ Could not filter links for ${si_category.category_name}`
