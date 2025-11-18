@@ -10,6 +10,7 @@ import v1BlogRoutes from "./routes/v1/routes.js";
 // Background thread
 
 import { SIACTION } from "./actions/SIACTION.js";
+import { TwitterAction } from "./actions/TwitterAction.js";
 
 // Load .env
 dotenv.config();
@@ -52,7 +53,11 @@ async function StartServer() {
    while (true) {
     try {
    
-     await SIACTION();
+        // let text ="Football Manager 2026"
+  await  SIACTION();
+   // let result = TwitterAction("FOOTBALL MANAGER",text,"https://sportsviewpoint.com/wp-content/uploads/2025/11/tmp_1763134656969_images2FvoltaxMediaLibrary2Fmmsport2Fsi2F01k9waedy27xwztgkjnp.jpg")
+
+
     } catch (err) {
       console.error("🔥 Error in scraper loop:", err.message);
     } 

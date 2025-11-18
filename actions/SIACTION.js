@@ -33,19 +33,16 @@ export async function SIACTION() {
   console.log("🔄 Starting background ping loop...");
 
   const si_categories = [
-     { category_name: "soccer", category_type: "grid" },
-     { category_name: "nba", category_type: "grid" },
-   
-   
-     { category_name: "nfl", category_type: "grid" },
+    { category_name: "nba", category_type: "grid" },
+    { category_name: "nfl", category_type: "grid" },
+    { category_name: "soccer", category_type: "grid" },
   ];
 
   const selecteddate = getTodayFormatted();
   console.log("📅 Selected date:", selecteddate);
 
   let todaysArticles = 0;
-  let tweetBatch = []; // Store tweet texts
-  let tweetCount = 0; // Count tweets made
+  let tweetCount = 0; // Posts made
 
   for (const si_category of si_categories) {
     try {
@@ -74,11 +71,11 @@ export async function SIACTION() {
       );
 
       //console.log(filtered)
-      
+
       for (let current_link of filtered.data) {
         try {
-         // current_link = JSON.parse(current_link);
- 
+          // current_link = JSON.parse(current_link);
+
           const html = await FETCH_NEWS_ARTICLE_DETAILS(current_link.link);
           if (!html.success) {
             console.warn(`⚠️ Failed to extract HTML for ${current_link.link}`);
@@ -146,27 +143,6 @@ ${hashtags}`;
           }
 
           // Continue to next article
-          // Skip tweeting for others
-          if (tweetBatch.length === 10) {
-            console.log("🐦 Posting tweet batch of 10...");
-            tweetCount++;
-
-            let combinedPost = tweetBatch
-              .map((t, index) => `${index + 1}. ${t.title}`)
-              .join("\n");
-
-            combinedPost += `\n\nRead all posts on our site.`;
-
-            // Tweet once for the batch
-            await TwitterAction(
-              `Batch Update #${tweetCount}`,
-              combinedPost,
-              null
-            );
-
-            // Reset batch
-            tweetBatch = [];
-          }
         } catch (innerErr) {
           console.error(
             `❌ Error processing article ${current_link.link}:`,
