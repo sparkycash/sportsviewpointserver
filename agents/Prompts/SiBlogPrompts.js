@@ -27,6 +27,19 @@ Add SEO metadata:
 - **keywords**: Meaningful, SEO-optimized keywords
 - **summary**: Short SEO-friendly summary
 
+When constructing the focus keyphrase ensure the following
+
+use Focus phrase in the SEO title.
+use Focus phrase in the SEO meta description.
+Use Focus phrase at the beginning of your content naturally.
+Use Focus phrase in the content naturally.
+improve the content to at least 700 words long
+Use Focus Keyword in subheading(s) like H2, H3, H4, etc..
+
+also Aim for around 1% Keyword Density.
+
+DO NOT INCLUDE THE FEAUTURED IMAGE IN THE BODY OF THE CONTENT
+
 Output in **YAML format** as follows:
 
 \`\`\`yaml
