@@ -7,7 +7,7 @@ import FormData from "form-data";
 /**
  * Uploads an image from any URL to WordPress and returns the new image URL.
  */
-async function uploadImageToWordPress(
+async function uploadImageToWordPressOld(
   imageUrl,
   blogUrl,
   authHeader,
@@ -44,6 +44,68 @@ async function uploadImageToWordPress(
     return { id: null, url: imageUrl };
   }
 }
+
+async function uploadImageToWordPress(
+  imageUrl,
+  blogUrl,
+  authHeader,
+  altText = ""
+) {
+  const MAX_RETRIES = 4;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`🖼️ Downloading image (Attempt ${attempt}): ${imageUrl}`);
+
+      // Download image
+      const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
+
+      const fileName = path.basename(imageUrl.split("?")[0]) || "image.jpg";
+      const tempPath = path.join(process.cwd(), `tmp_${Date.now()}_${fileName}`);
+      fs.writeFileSync(tempPath, response.data);
+
+      // Build form data
+      const formData = new FormData();
+      formData.append("file", fs.createReadStream(tempPath));
+      if (altText) formData.append("alt_text", altText);
+
+      // Upload to WordPress
+      const uploadRes = await axios.post(
+        `${blogUrl}/wp-json/wp/v2/media`,
+        formData,
+        {
+          headers: { Authorization: authHeader, ...formData.getHeaders() },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        }
+      );
+
+      // Clean temp
+      fs.unlinkSync(tempPath);
+
+      const newUrl = uploadRes.data.source_url;
+      console.log(`✅ Uploaded to WordPress: ${newUrl}`);
+
+      return { id: uploadRes.data.id, url: newUrl };
+    } catch (err) {
+      console.error(
+        `❌ Upload attempt ${attempt} failed for ${imageUrl}:`,
+        err.message
+      );
+
+      if (attempt === MAX_RETRIES) {
+        console.error(`🚨 All retries failed. Returning original image URL.`);
+        return { id: null, url: imageUrl };
+      }
+
+      // Wait before retry (exponential backoff: 1s, 2s, 4s, 8s)
+      const delay = 1000 * Math.pow(2, attempt - 1);
+      console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}
+
 
 /**
  * Posts article (with rewritten images) to WordPress.
