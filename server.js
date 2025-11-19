@@ -80,7 +80,7 @@ async function StopServer() {
 }
 
 // Start Express
-const PORT = process.env.PORT || 8200;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
   await StartServer();
