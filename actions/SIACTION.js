@@ -11,7 +11,7 @@ import {
   FETCH_NEWS_ARTICLE_DETAILS,
 } from "../scrapers/SiScrapper.js";
 import { safeParseYAML } from "../lib/globalfunctions.js";
-import { SiWordpressPublisher } from "../publishers/Wordpress/SiWordpressPublisher.js";
+import { SiWordpressPublisher, UpdateCanonical } from "../publishers/Wordpress/SiWordpressPublisher.js";
 import { TwitterAction } from "./TwitterAction.js";
 
 // Utility: Get today's formatted date
@@ -33,11 +33,9 @@ export async function SIACTION() {
   console.log("🔄 Starting background ping loop...");
 
   const si_categories = [
-     { category_name: "soccer", category_type: "grid" },
-     { category_name: "nfl", category_type: "grid" },
     { category_name: "nba", category_type: "grid" },
-   
-   
+    { category_name: "soccer", category_type: "grid" },
+    { category_name: "nfl", category_type: "grid" },
   ];
 
   const selecteddate = getTodayFormatted();
@@ -60,9 +58,12 @@ export async function SIACTION() {
       );
       todaysArticles += links.articles?.length;
 
-      const filtered = await filterNewLinks(links?.articles, si_category, selecteddate);
+      const filtered = await filterNewLinks(
+        links?.articles,
+        si_category,
+        selecteddate
+      );
 
-      
       if (!filtered?.success || !Array.isArray(filtered.data)) {
         console.warn(
           `⚠️ Could not filter links for ${si_category.category_name}`
@@ -114,12 +115,16 @@ export async function SIACTION() {
             status: wordpressresult.data.status || "unknown",
             description: wordpressresult.data.status || "No description",
           };
+         
 
           await saveArticle(article);
           console.log(
             `✅ NEW ARTICLE SAVED at ${new Date().toLocaleTimeString()}`
           );
 
+            await UpdateCanonical(wordpressresult.data.id, wordpressresult.data.link)
+            console.log("Canonical Updated!!!")
+          await delay(1000);
           // Prepare tweet text
           let hashtags = parsedresult.tags.map((tag) => `#${tag}`).join(" ");
 
@@ -130,10 +135,10 @@ ${article.wp_permalink}
 ${hashtags}`;
 
           // Increment tweet counter
-          tweetCount++;
+         
 
           // Only tweet on every 10th article
-          if (tweetCount === 10) {
+          if (tweetCount == 2) {
             console.log("🐦 Posting single tweet for 10th article...");
 
             await TwitterAction(
@@ -144,6 +149,9 @@ ${hashtags}`;
 
             // Reset counter
             tweetCount = 0;
+          }
+          else{
+             tweetCount++;
           }
 
           // Continue to next article
@@ -160,20 +168,6 @@ ${hashtags}`;
         err.message
       );
     }
-  }
-
-  // Post remaining tweets if fewer than 10 exist
-  if (tweetBatch.length > 0) {
-    tweetCount++;
-    console.log(`🐦 Posting final batch of ${tweetBatch.length} tweets...`);
-
-    let combinedPost = tweetBatch
-      .map((t, index) => `${index + 1}. ${t.title}`)
-      .join("\n");
-
-    combinedPost += `\n\nRead full posts on our website.`;
-
-    await TwitterAction(`Batch Update #${tweetCount}`, combinedPost, null);
   }
 
   console.log(

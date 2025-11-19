@@ -90,11 +90,11 @@ export async function postWithMedia(text, imagePath) {
     console.log("✅ Tweet with image posted!");
     console.log(response.data);
   } catch (error) {
-    console.error(
+    console.log(
       "❌ Error posting tweet with media:",
       error.response?.data || error.message
     );
-    throw error;
+    
   }
 }
 

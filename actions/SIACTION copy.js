@@ -1,11 +1,11 @@
-// SIACTION.js
+// SIACTION.js (refactored with tweet batching every 10 posts)
 
 import {
   createTables,
   filterNewLinks,
   saveArticle,
 } from "../lib/Database/dbFunctions.js";
-import { SiBlogReWriter } from "../agents/SIBLOGREWRITER.js";
+import { SiBlogReWriter } from "../agents/SiBlogReWriter.js";
 import {
   FETCH_ARTICLE_LINKS,
   FETCH_NEWS_ARTICLE_DETAILS,
@@ -32,22 +32,17 @@ function delay(ms) {
 export async function SIACTION() {
   console.log("🔄 Starting background ping loop...");
 
-  // Optionally ensure tables exist
-  // await createTables();
-
   const si_categories = [
+    { category_name: "nba", category_type: "grid" },
     { category_name: "soccer", category_type: "grid" },
-    // { category_name: "nfl", category_type: "grid" },
-    // { category_name: "nba", category_type: "grid" },
-    // { category_name: "FANTASY", category_type: "grid" },
-    // { category_name: "GOLF", category_type: "grid" },
-    // { category_name: "boxing", category_type: "grid" },
+    { category_name: "nfl", category_type: "grid" },
   ];
 
   const selecteddate = getTodayFormatted();
   console.log("📅 Selected date:", selecteddate);
 
-  let todysarticles = 0;
+  let todaysArticles = 0;
+  let tweetCount = 0; // Posts made
 
   for (const si_category of si_categories) {
     try {
@@ -56,18 +51,19 @@ export async function SIACTION() {
       );
 
       let links = await FETCH_ARTICLE_LINKS(selecteddate, si_category);
-
-      if (!links.success) {
-        continue;
-      }
+      if (!links.success) continue;
+      //console.log(links);
       console.log(
-        `✅ ${links.articles?.length} links fetched for ${si_category.category_name}`
+        `✅ ${links.articles?.length} Links fetched for ${si_category.category_name}`
       );
-      todysarticles += links.articles?.length;
+      todaysArticles += links.articles?.length;
 
-      links = links?.articles;
+      const filtered = await filterNewLinks(
+        links?.articles,
+        si_category,
+        selecteddate
+      );
 
-      const filtered = await filterNewLinks(links);
       if (!filtered?.success || !Array.isArray(filtered.data)) {
         console.warn(
           `⚠️ Could not filter links for ${si_category.category_name}`
@@ -79,49 +75,28 @@ export async function SIACTION() {
         `📰 Found ${filtered.data.length} new articles for ${si_category.category_name}`
       );
 
+      //console.log(filtered)
+
       for (let current_link of filtered.data) {
         try {
-          //console.log(`➡️ Processing: ${current_link}`);
-
-          current_link = JSON.parse(current_link);
+          // current_link = JSON.parse(current_link);
 
           const html = await FETCH_NEWS_ARTICLE_DETAILS(current_link.link);
           if (!html.success) {
             console.warn(`⚠️ Failed to extract HTML for ${current_link.link}`);
-            // continue;
           }
-
-          //      data: {
-          //   title,
-          //   originalLink:url,
-          //   image,
-          //   imageAlt,
-          //   datePosted,
-          //   articleHtml: articleSection,
-          // }
 
           const wordpressdata = await SiBlogReWriter(
             html.data.articleHtml,
             si_category
           );
-          if (!wordpressdata?.answer) {
-            console.warn(`⚠️ No rewrite data returned for ${current_link}`);
-            continue;
-          }
+          if (!wordpressdata?.answer) continue;
 
           const parsedresult = safeParseYAML(wordpressdata.answer);
-          if (!parsedresult) {
-            console.error(`❌ Failed to parse YAML for ${current_link}`);
-            continue;
-          }
+          if (!parsedresult) continue;
 
           const wordpressresult = await SiWordpressPublisher(parsedresult);
-          if (!wordpressresult?.data) {
-            console.error(
-              `❌ Failed to upload post to WordPress for ${current_link}`
-            );
-            continue;
-          }
+          if (!wordpressresult?.data) continue;
 
           const article = {
             source: "SI",
@@ -146,22 +121,36 @@ export async function SIACTION() {
             `✅ NEW ARTICLE SAVED at ${new Date().toLocaleTimeString()}`
           );
 
-          let hashtags = parsedresult.tags.map((tag) => "#" + tag);
+          // Prepare tweet text
+          let hashtags = parsedresult.tags.map((tag) => `#${tag}`).join(" ");
 
-          let twittertext =
-            parsedresult.summary +
-            "...\n\n" +
-            article.wp_permalink +
-            "\n\n" +
-            hashtags;
-          await TwitterAction(
-            parsedresult.title,
-            twittertext,
-            parsedresult.featured_image
-          );
+          let twittertext = `${parsedresult.summary}...
+
+${article.wp_permalink}
+
+${hashtags}`;
+
+          // Increment tweet counter
+          tweetCount++;
+
+          // Only tweet on every 10th article
+          if (tweetCount == 10) {
+            console.log("🐦 Posting single tweet for 10th article...");
+
+            await TwitterAction(
+              parsedresult.title,
+              twittertext,
+              parsedresult.featured_image
+            );
+
+            // Reset counter
+            tweetCount = 0;
+          }
+
+          // Continue to next article
         } catch (innerErr) {
           console.error(
-            `❌ Error processing article ${current_link}:`,
+            `❌ Error processing article ${current_link.link}:`,
             innerErr.message
           );
         }
@@ -175,6 +164,6 @@ export async function SIACTION() {
   }
 
   console.log(
-    `\n🎯 All categories processed successfully. Total articles: ${todysarticles}`
+    `\n🎯 All categories processed. Total articles: ${todaysArticles}. Total tweet batches: ${tweetCount}`
   );
 }
